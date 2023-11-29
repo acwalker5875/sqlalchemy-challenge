@@ -19,10 +19,11 @@ Base = automap_base()
 Base.prepare(autoload_with=engine)
 
 # Save references to each table
-
+Measurement = Base.classes.measurement
+Station = Base.classes.station
 
 # Create our session (link) from Python to the DB
-
+session = Session(engine)
 
 #################################################
 # Flask Setup
@@ -51,33 +52,54 @@ def names():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all passenger names"""
-    # Query all passengers
-    results = session.query(Passenger.name).all()
+    """Convert the query results from your precipitation analysis to a dictionary"""
+    
+    # Query  data
+    date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+    results = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= date).all()
 
     session.close()
+    
+    # Create a dictionary from the row data
+    precipitation = []
+    for date, prcp in results:
+        precipitation_dict = {}
+        precipitation_dict["date"] = date
+        precipitation_dict["prcp"] = prcp
+        precipitation.append(precipitation_dict)
+
+    return jsonify(precipitation)
+
     
 @app.route("/api/v1.0/stations")
 def names():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all passenger names"""
-    # Query all passengers
-    results = session.query(Passenger.name).all()
+    """Return a list of all station names"""
+    # Query all stations
+    station_list = session.query(func.distinct(Station.station)).all()
 
     session.close()
+    
+    return jsonify(station_list)
 
 @app.route("/api/v1.0/tobs")
 def names():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all passenger names"""
-    # Query all passengers
-    results = session.query(Passenger.name).all()
+    #Query the dates and temperature observations of the most-active station for the previous year of data.
+    date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+    results = session.query(Measurement.date, Measurement.tobs) \
+    .filter(Measurement.station == station_id, Measurement.date >= date) \
+    .all()
 
+    """Return a JSON list of temperature observations for the previous year"""
+    
     session.close()
+    
+    return jsonify(results)
 
 @app.route("/api/v1.0/<start>")
 def names():
