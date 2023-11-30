@@ -103,22 +103,51 @@ def names():
 
 @app.route("/api/v1.0/<start>")
 def names():
+    #Define Start date
+    start_date = dt.date(2016, 8, 23) 
+    
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all passenger names"""
-    # Query all passengers
-    results = session.query(Passenger.name).all()
+    """For a specified start, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date."""
+    # Get unique station IDs
+    unique_station_ids = session.query(Station.station).distinct().all()
+
+    # Loop through each station ID and calculate TMIN, TAVG, and TMAX
+    for station_id, in unique_station_ids:
+        results = session.query(func.min(Measurement.tobs).label('TMIN'),
+                            func.max(Measurement.tobs).label('TMAX'),
+                            func.avg(Measurement.tobs).label('TAVG')) \
+                    .filter(Measurement.station == station_id) \
+                    .filter(Measurement.date >= start_date).first()
 
     session.close()
+    
+    return jsonify(results)
 
 @app.route("/api/v1.0/<start>/<end>")
 def names():
+    
+    #Define start and end dates
+    start_date = dt.date(2015, 8, 23) 
+    end_date = dt.date(2016, 8, 23)
+    
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all passenger names"""
-    # Query all passengers
-    results = session.query(Passenger.name).all()
+    """For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive."""
+    # Get unique station IDs
+    unique_station_ids = session.query(Station.station).distinct().all()
+
+    # Loop through each station ID and calculate TMIN, TAVG, and TMAX
+    for station_id, in unique_station_ids:
+        results = session.query(func.min(Measurement.tobs).label('TMIN'),
+                            func.max(Measurement.tobs).label('TMAX'),
+                            func.avg(Measurement.tobs).label('TAVG')) \
+                    .filter(Measurement.station == station_id) \
+                    .filter(Measurement.date >= start_date)\
+                    .filter(Measurement.date <= end_date).first()
 
     session.close()
+    
+    return jsonify(results)
